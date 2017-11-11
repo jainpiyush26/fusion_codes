@@ -2,6 +2,7 @@
 """
 Save and increments the version as well as any savers present in the comps
 
+Author: Piyush Jain
 """
 import os
 import re
@@ -22,12 +23,19 @@ def get_updated_version(comp_name):
 		new_version = current_version + 1
 		new_version_padding = "{0:0" + str(padding) + "d}"
 		new_version_final = new_version_padding.format(new_version)
-
-		return new_version_final, version_string
+		if orig_version_string.startswith("v"):
+			new_version_final = "v"+new_version_final
+		return new_version_final, orig_version_string
 
 def update_savers(saver, new_version, old_version_string):
+	old_version_pattern = ""
+	for items in old_version_string:
+		if items.isdigit():
+			old_version_pattern += '\d'
+		else:
+			old_version_pattern += items
 	saver_path = saver.Clip[0]
-	new_saver_path = re.sub(old_version_string, new_version, saver_path)
+	new_saver_path = re.sub(old_version_pattern, new_version, saver_path)
 	if not os.path.exists(os.path.dirname(new_saver_path)):
 		try:
 			os.makedirs(os.path.dirname(new_saver_path))
@@ -40,16 +48,23 @@ def update_savers(saver, new_version, old_version_string):
 def main():
 	comp_name = comp.GetAttrs()['COMPS_Name']
 	comp_file_location = os.path.dirname(comp.GetAttrs()['COMPS_FileName'])
-
-	new_version, current_version_pattern = get_updated_version(comp_name)
-
-	if not new_version:
-		print ("Bad version string in the comp!")
+	if not os.path.exists(comp_file_location):
+		print "Cannot Run! Comp is not saved..."
 		return
+	while True:
+		new_version, current_version_pattern = get_updated_version(comp_name)
 
-	comp.Lock()
-	new_comp_name = re.sub(current_version_pattern + ".comp", new_version + ".comp", comp_name + ".comp")
-	new_comp_location = os.path.join(comp_file_location, new_comp_name)
+		if not new_version:
+			print ("Bad version string in the comp!")
+			return
+
+		comp.Lock()
+		new_comp_name = re.sub(current_version_pattern, new_version, comp_name)
+		new_comp_location = os.path.join(comp_file_location, new_comp_name + ".comp")
+		if not os.path.exists(new_comp_location):
+			break
+		else:
+			comp_name = new_comp_name
 	comp.Save(new_comp_location)
 	saver_list = comp.GetToolList(False, "Saver")
 	if len(saver_list.values()) > 0:
