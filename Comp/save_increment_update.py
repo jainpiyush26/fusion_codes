@@ -6,6 +6,7 @@ Author: Piyush Jain
 """
 import os
 import re
+import sys
 
 def get_updated_version(comp_name):
 	version_pattern_search = re.search("(v{0,1}\d*)$", os.path.splitext(comp_name)[0], re.I)
@@ -60,7 +61,10 @@ def main():
 
 		comp.Lock()
 		new_comp_name = re.sub(current_version_pattern, new_version, comp_name)
-		new_comp_location = os.path.join(comp_file_location, new_comp_name + ".comp")
+		if sys.platform == "win32":
+			new_comp_location = os.path.join(comp_file_location, new_comp_name)
+		else:
+			new_comp_location = os.path.join(comp_file_location, new_comp_name + ".comp")
 		if not os.path.exists(new_comp_location):
 			break
 		else:
